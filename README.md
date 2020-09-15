@@ -9,6 +9,7 @@ go get github.com/KimMachineGun/flago
 ```
 
 ## Example
+[Playground](https://play.golang.org/p/c3HlUPZj1Ot)
 ```go
 package main
 
