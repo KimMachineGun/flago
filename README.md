@@ -30,12 +30,12 @@ type Flags struct {
 // CommaSeparatedStrings implements flag.Value.
 type CommaSeparatedStrings []string
 
-func (f *CommaSeparatedStrings) String() string {
-	return strings.Join(*f, ",")
+func (s *CommaSeparatedStrings) String() string {
+	return strings.Join(*s, ",")
 }
 
-func (f *CommaSeparatedStrings) Set(s string) error {
-	*f = strings.Split(s, ",")
+func (s *CommaSeparatedStrings) Set(v string) error {
+	*s = strings.Split(v, ",")
 	return nil
 }
 
