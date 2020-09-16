@@ -56,7 +56,7 @@ func main() {
 
 	flag.PrintDefaults()
 	// Output:
-	// 	-a string
+	//  -a string
 	//        usage of a (default "AB")
 	//  -b int
 	//        usage of b (default 180)
