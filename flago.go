@@ -30,6 +30,9 @@ func (e *InvalidBindError) Error() string {
 // The name of field tag is 'flago' and its value is used to
 // specify the name and usage of the flag.
 //
+// If the field is a struct, flago will parse it recursively,
+// and its field tag will be used as a prefix of the flags defined by itself.
+//
 // Supported Field Types:
 //
 //  - string
@@ -52,6 +55,10 @@ func (e *InvalidBindError) Error() string {
 //   Age int `flago:"age,the age of gopher"`
 //
 func Bind(fs *flag.FlagSet, v interface{}) error {
+	return bind(fs, v, "")
+}
+
+func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct || rv.IsNil() {
 		return &InvalidBindError{Type: reflect.TypeOf(v)}
@@ -75,7 +82,7 @@ func Bind(fs *flag.FlagSet, v interface{}) error {
 		if len(tag) != 2 {
 			tag = append(tag, "")
 		}
-		name, usage := strings.TrimSpace(tag[0]), strings.TrimSpace(tag[1])
+		name, usage := prefix+strings.TrimSpace(tag[0]), strings.TrimSpace(tag[1])
 
 		switch f := field.Addr().Interface().(type) {
 		case *string:
@@ -97,7 +104,13 @@ func Bind(fs *flag.FlagSet, v interface{}) error {
 		case flag.Value:
 			fs.Var(f, name, usage)
 		default:
-			return fmt.Errorf("unsupported type: %T", f)
+			if field.Kind() != reflect.Struct {
+				return fmt.Errorf("unsupported type: %T", f)
+			}
+
+			if err := bind(fs, f, name); err != nil {
+				return err
+			}
 		}
 	}
 
