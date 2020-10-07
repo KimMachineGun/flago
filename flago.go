@@ -73,8 +73,8 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
 			continue
 		}
 
-		rawTag := elemType.Field(i).Tag.Get("flago")
-		if rawTag == "" {
+		rawTag, ok := elemType.Field(i).Tag.Lookup("flago")
+		if !ok {
 			continue
 		}
 
@@ -82,7 +82,7 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
 		if len(tag) != 2 {
 			tag = append(tag, "")
 		}
-		name, usage := prefix+strings.TrimSpace(tag[0]), strings.TrimSpace(tag[1])
+		name, usage := prefix+tag[0], tag[1]
 
 		switch f := field.Addr().Interface().(type) {
 		case *string:
