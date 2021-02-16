@@ -35,6 +35,15 @@ func TestBind__InvalidBindError(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
+	t.Run("invalid bind: nil-pointer struct", func(t *testing.T) {
+		var v *struct{}
+		err := Bind(nil, v)
+		if err == nil {
+			t.Error("error should occur")
+		} else if err.Error() != "flago: Bind(nil *struct {})" {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }
 
 type commaSeparated []string
@@ -93,6 +102,72 @@ func TestBind(t *testing.T) {
 	}
 
 	err = fs.Parse([]string{"-a=456", "-c=Hello World!", "-d=Geon,Kim", "-sub.a=subaval"})
+	if err != nil {
+		t.Errorf("error should not occur: %v", err)
+	}
+
+	if !reflect.DeepEqual(v, flags{
+		A: 456,
+		B: true,
+		C: "Hello World!",
+		D: []string{"Geon", "Kim"},
+		e: true,
+		Sub: struct {
+			A string `flago:"a,usage of sub.a"`
+		}{
+			A: "subaval",
+		},
+	}) {
+		t.Errorf("unexpected result: %v", v)
+	}
+}
+
+func TestBindWithPrefix(t *testing.T) {
+	fs := flag.NewFlagSet("flago", flag.ContinueOnError)
+
+	buf := bytes.NewBuffer(nil)
+	fs.SetOutput(buf)
+
+	type flags struct {
+		A   int            `flago:"a,usage of a"`
+		B   bool           `flago:"b,usage of b"`
+		C   string         `flago:"c,usage of c"`
+		D   commaSeparated `flago:"d,usage of d"`
+		Sub struct {
+			A string `flago:"a,usage of sub.a"`
+		} `flago:"sub."`
+		// e will be omitted, since it is an unexported field.
+		e bool `flago:"e,usage of e"`
+	}
+	v := flags{
+		A: 123,
+		B: true,
+		C: "hello world",
+		D: []string{"Kim", "Machine", "Gun"},
+		e: true,
+	}
+	err := BindWithPrefix(fs, &v, "pre.")
+	if err != nil {
+		t.Errorf("error should not occur: %v", err)
+	}
+
+	defaults := `  -pre.a int
+    	usage of a (default 123)
+  -pre.b
+    	usage of b (default true)
+  -pre.c string
+    	usage of c (default "hello world")
+  -pre.d value
+    	usage of d (default Kim,Machine,Gun)
+  -pre.sub.a string
+    	usage of sub.a
+`
+	fs.PrintDefaults()
+	if buf.String() != defaults {
+		t.Errorf("unexpected defaults: %s", buf.String())
+	}
+
+	err = fs.Parse([]string{"-pre.a=456", "-pre.c=Hello World!", "-pre.d=Geon,Kim", "-pre.sub.a=subaval"})
 	if err != nil {
 		t.Errorf("error should not occur: %v", err)
 	}

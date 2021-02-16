@@ -61,7 +61,13 @@ func (e *InvalidBindError) Error() string {
 //   }
 //
 func Bind(fs *flag.FlagSet, v interface{}) error {
-	return bind(fs, v, "")
+	return BindWithPrefix(fs, v, "")
+}
+
+// BindWithPrefix defines flags with prefix.
+// See the comments of Bind for more details.
+func BindWithPrefix(fs *flag.FlagSet, v interface{}, prefix string) error {
+	return bind(fs, v, prefix)
 }
 
 func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
