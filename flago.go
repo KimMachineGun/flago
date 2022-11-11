@@ -32,34 +32,33 @@ func (e *InvalidBindError) Error() string {
 // of the flag. If a field does not have a 'flago' field tag,
 // it will be ignored.
 //
-//  If a field is struct type, Bind will parse it recursively,
-//  and its field tag will be used as a prefix of the names of
-//  the flags defined by itself.
+// If a field is struct type, Bind will parse it recursively,
+// and its field tag will be used as a prefix of the names of
+// the flags defined by itself.
 //
 // Supported Field Types:
 //
-//  - string
-//  - bool
-//  - int
-//  - int64
-//  - uint
-//  - uint64
-//  - float64
-//  - time.Duration
-//  - flag.Value
+//   - string
+//   - bool
+//   - int
+//   - int64
+//   - uint
+//   - uint64
+//   - float64
+//   - time.Duration
+//   - flag.Value
 //
 // Examples:
 //
-//   type Example struct {
-//   	// Name defines a 'name' flag, and its usage message is not set (empty string).
-//   	Name string `flago:"name"`
+//	type Example struct {
+//			// Name defines a 'name' flag, and its usage message is not set (empty string).
+//			Name string `flago:"name"`
 //
-//   	// Age defines a 'age' flag, and its usage message is 'the age of gopher'.
-//   	// The name and usage specified in the field tag are separated by comma.
-//   	// flag.IntVar()
-//   	Age int `flago:"age,the age of gopher"`
-//   }
-//
+//			// Age defines a 'age' flag, and its usage message is 'the age of gopher'.
+//			// The name and usage specified in the field tag are separated by comma.
+//			// flag.IntVar()
+//			Age int `flago:"age,the age of gopher"`
+//	}
 func Bind(fs *flag.FlagSet, v interface{}) error {
 	return BindWithPrefix(fs, v, "")
 }
@@ -67,10 +66,10 @@ func Bind(fs *flag.FlagSet, v interface{}) error {
 // BindWithPrefix defines flags with prefix.
 // See the comments of Bind for more details.
 func BindWithPrefix(fs *flag.FlagSet, v interface{}, prefix string) error {
-	return bind(fs, v, prefix)
+	return bind(fs, v, prefix, false)
 }
 
-func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
+func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct || rv.IsNil() {
 		return &InvalidBindError{Type: reflect.TypeOf(v)}
@@ -98,33 +97,80 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string) error {
 
 		switch f := field.Addr().Interface().(type) {
 		case *string:
-			fs.StringVar(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvString(*f, f), name, usage)
+			} else {
+				fs.StringVar(f, name, *f, usage)
+			}
 		case *bool:
-			fs.BoolVar(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvBool(*f, f), name, usage)
+			} else {
+				fs.BoolVar(f, name, *f, usage)
+			}
 		case *int:
-			fs.IntVar(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvInt(*f, f), name, usage)
+			} else {
+				fs.IntVar(f, name, *f, usage)
+			}
 		case *int64:
-			fs.Int64Var(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvInt64(*f, f), name, usage)
+			} else {
+				fs.Int64Var(f, name, *f, usage)
+			}
 		case *uint:
-			fs.UintVar(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvUint(*f, f), name, usage)
+			} else {
+				fs.UintVar(f, name, *f, usage)
+			}
 		case *uint64:
-			fs.Uint64Var(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvUint64(*f, f), name, usage)
+			} else {
+				fs.Uint64Var(f, name, *f, usage)
+			}
 		case *float64:
-			fs.Float64Var(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvFloat64(*f, f), name, usage)
+			} else {
+				fs.Float64Var(f, name, *f, usage)
+			}
 		case *time.Duration:
-			fs.DurationVar(f, name, *f, usage)
+			if expand {
+				fs.Var(newEnvDuration(*f, f), name, usage)
+			} else {
+				fs.DurationVar(f, name, *f, usage)
+			}
 		case flag.Value:
-			fs.Var(f, name, usage)
+			if expand {
+				fs.Var(newEnvVar(f), name, usage)
+			} else {
+				fs.Var(f, name, usage)
+			}
 		default:
 			if field.Kind() != reflect.Struct {
 				return fmt.Errorf("unsupported type: %T", f)
 			}
 
-			if err := bind(fs, f, name); err != nil {
+			if err := bind(fs, f, name, expand); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+// BindEnvExpanded defines exv-expanded flags based on the struct field tags and
+// binds flags to the corresponding fields.
+func BindEnvExpanded(fs *flag.FlagSet, v interface{}) error {
+	return BindEnvExpandedWithPrefix(fs, v, "")
+}
+
+// BindEnvExpandedWithPrefix defines env-expanded flags with prefix.
+func BindEnvExpandedWithPrefix(fs *flag.FlagSet, v interface{}, prefix string) error {
+	return bind(fs, v, prefix, true)
 }
