@@ -32,9 +32,9 @@ func (e *InvalidBindError) Error() string {
 // of the flag. If a field does not have a 'flago' field tag,
 // it will be ignored.
 //
-// If a field is struct type, Bind will parse it recursively,
-// and its field tag will be used as a prefix of the names of
-// the flags defined by itself.
+//	If a field is struct type, Bind will parse it recursively,
+//	and its field tag will be used as a prefix of the names of
+//	the flags defined by itself.
 //
 // Supported Field Types:
 //
@@ -51,13 +51,13 @@ func (e *InvalidBindError) Error() string {
 // Examples:
 //
 //	type Example struct {
-//			// Name defines a 'name' flag, and its usage message is not set (empty string).
-//			Name string `flago:"name"`
+//		// Name defines a 'name' flag, and its usage message is not set (empty string).
+//		Name string `flago:"name"`
 //
-//			// Age defines a 'age' flag, and its usage message is 'the age of gopher'.
-//			// The name and usage specified in the field tag are separated by comma.
-//			// flag.IntVar()
-//			Age int `flago:"age,the age of gopher"`
+//		// Age defines a 'age' flag, and its usage message is 'the age of gopher'.
+//		// The name and usage specified in the field tag are separated by comma.
+//		// flag.IntVar()
+//		Age int `flago:"age,the age of gopher"`
 //	}
 func Bind(fs *flag.FlagSet, v interface{}) error {
 	return BindWithPrefix(fs, v, "")
