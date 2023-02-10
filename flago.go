@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"flag"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -23,6 +24,15 @@ func (e *InvalidBindError) Error() string {
 	}
 
 	return "flago: Bind(nil " + e.Type.String() + ")"
+}
+
+// Parse parses the default command-line flag set defined in the flag package.
+func Parse(v interface{}) error {
+	err := Bind(flag.CommandLine, v)
+	if err != nil {
+		return err
+	}
+	return flag.CommandLine.Parse(os.Args[1:])
 }
 
 // Bind defines flags based on the struct field tags and
