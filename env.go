@@ -1,6 +1,7 @@
 package flago
 
 import (
+	"encoding"
 	"flag"
 	"fmt"
 	"os"
@@ -170,20 +171,45 @@ func (p *envDuration) String() string {
 }
 
 type envVar struct {
-	flag.Value
+	v flag.Value
 }
 
-func newEnvVar(val flag.Value) envVar {
-	return envVar{val}
+func newEnvVar(val flag.Value) *envVar {
+	return &envVar{val}
 }
 
-func (p envVar) Set(s string) error {
-	return p.Value.Set(os.ExpandEnv(s))
+func (p *envVar) Set(s string) error {
+	return p.v.Set(os.ExpandEnv(s))
 }
 
-func (p envVar) String() string {
-	if p.Value == nil {
+func (p *envVar) String() string {
+	if p.v == nil {
 		return ""
 	}
-	return p.Value.String()
+	return p.v.String()
+}
+
+type envText struct {
+	v interface {
+		encoding.TextMarshaler
+		encoding.TextUnmarshaler
+	}
+}
+
+func newEnvText(val interface {
+	encoding.TextMarshaler
+	encoding.TextUnmarshaler
+}) *envText {
+	return &envText{val}
+}
+
+func (p *envText) MarshalText() ([]byte, error) {
+	return p.v.MarshalText()
+}
+
+func (p *envText) UnmarshalText(b []byte) error {
+	if len(b) > 0 {
+		b = []byte(os.ExpandEnv(string(b)))
+	}
+	return p.v.UnmarshalText(b)
 }

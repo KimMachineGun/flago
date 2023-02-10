@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBind__InvalidBindError(t *testing.T) {
@@ -72,6 +73,7 @@ func TestBind(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
 	}
@@ -80,6 +82,7 @@ func TestBind(t *testing.T) {
 		B: true,
 		C: "hello world",
 		D: []string{"Kim", "Machine", "Gun"},
+		T: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
 	}
 	err := Bind(fs, &v)
@@ -96,13 +99,21 @@ func TestBind(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -sub.a string
     	usage of sub.a
+  -t value
+    	usage of t (default 2023-01-01T00:00:00Z)
 `
 	fs.PrintDefaults()
 	if buf.String() != defaults {
 		t.Errorf("unexpected defaults: %s", buf.String())
 	}
 
-	err = fs.Parse([]string{"-a=456", "-c=Hello World!", "-d=Geon,Kim", "-sub.a=subaval"})
+	err = fs.Parse([]string{
+		"-a=456",
+		"-c=Hello World!",
+		"-d=Geon,Kim",
+		"-sub.a=subaval",
+		"-t=2020-01-01T00:00:00Z",
+	})
 	if err != nil {
 		t.Errorf("error should not occur: %v", err)
 	}
@@ -112,12 +123,13 @@ func TestBind(t *testing.T) {
 		B: true,
 		C: "Hello World!",
 		D: []string{"Geon", "Kim"},
-		e: true,
 		Sub: struct {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "subaval",
 		},
+		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		e: true,
 	}) {
 		t.Errorf("unexpected result: %v", v)
 	}
@@ -137,6 +149,7 @@ func TestBindWithPrefix(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
 	}
@@ -145,6 +158,7 @@ func TestBindWithPrefix(t *testing.T) {
 		B: true,
 		C: "hello world",
 		D: []string{"Kim", "Machine", "Gun"},
+		T: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
 	}
 	err := BindWithPrefix(fs, &v, "pre.")
@@ -162,13 +176,21 @@ func TestBindWithPrefix(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -pre.sub.a string
     	usage of sub.a
+  -pre.t value
+    	usage of t (default 2023-01-01T00:00:00Z)
 `
 	fs.PrintDefaults()
 	if buf.String() != defaults {
 		t.Errorf("unexpected defaults: %s", buf.String())
 	}
 
-	err = fs.Parse([]string{"-pre.a=456", "-pre.c=Hello World!", "-pre.d=Geon,Kim", "-pre.sub.a=subaval"})
+	err = fs.Parse([]string{
+		"-pre.a=456",
+		"-pre.c=Hello World!",
+		"-pre.d=Geon,Kim",
+		"-pre.sub.a=subaval",
+		"-pre.t=2020-01-01T00:00:00Z",
+	})
 	if err != nil {
 		t.Errorf("error should not occur: %v", err)
 	}
@@ -178,12 +200,13 @@ func TestBindWithPrefix(t *testing.T) {
 		B: true,
 		C: "Hello World!",
 		D: []string{"Geon", "Kim"},
-		e: true,
 		Sub: struct {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "subaval",
 		},
+		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		e: true,
 	}) {
 		t.Errorf("unexpected result: %v", v)
 	}
@@ -203,6 +226,7 @@ func TestBindExpanded(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
 	}
@@ -211,6 +235,7 @@ func TestBindExpanded(t *testing.T) {
 		B: true,
 		C: "hello world",
 		D: []string{"Kim", "Machine", "Gun"},
+		T: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
 	}
 	err := BindEnvExpanded(fs, &v)
@@ -228,6 +253,8 @@ func TestBindExpanded(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -sub.a value
     	usage of sub.a
+  -t value
+    	usage of t (default 2023-01-01T00:00:00Z)
 `
 	fs.PrintDefaults()
 	if buf.String() != defaults {
@@ -238,7 +265,14 @@ func TestBindExpanded(t *testing.T) {
 	os.Setenv("FLAGO_C", "World Hello!")
 	os.Setenv("FLAGO_D", "Kim,Geon")
 	os.Setenv("FLAGO_SUB_A", "lavabus")
-	err = fs.Parse([]string{"-a=${FLAGO_A}", "-c=${FLAGO_C}", "-d=${FLAGO_D}", "-sub.a=${FLAGO_SUB_A}"})
+	os.Setenv("FLAGO_T", "2020-01-01T00:00:00Z")
+	err = fs.Parse([]string{
+		"-a=${FLAGO_A}",
+		"-c=${FLAGO_C}",
+		"-d=${FLAGO_D}",
+		"-sub.a=${FLAGO_SUB_A}",
+		"-t=${FLAGO_T}",
+	})
 	if err != nil {
 		t.Errorf("error should not occur: %v", err)
 	}
@@ -248,12 +282,13 @@ func TestBindExpanded(t *testing.T) {
 		B: true,
 		C: "World Hello!",
 		D: []string{"Kim", "Geon"},
-		e: true,
 		Sub: struct {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "lavabus",
 		},
+		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		e: true,
 	}) {
 		t.Errorf("unexpected result: %v", v)
 	}
@@ -273,6 +308,7 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
 	}
@@ -281,6 +317,7 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 		B: true,
 		C: "hello world",
 		D: []string{"Kim", "Machine", "Gun"},
+		T: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
 	}
 	err := BindEnvExpandedWithPrefix(fs, &v, "pre.")
@@ -298,6 +335,8 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -pre.sub.a value
     	usage of sub.a
+  -pre.t value
+    	usage of t (default 2023-01-01T00:00:00Z)
 `
 	fs.PrintDefaults()
 	if buf.String() != defaults {
@@ -308,7 +347,14 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 	os.Setenv("FLAGO_C", "World Hello!")
 	os.Setenv("FLAGO_D", "Kim,Geon")
 	os.Setenv("FLAGO_SUB_A", "lavabus")
-	err = fs.Parse([]string{"-pre.a=${FLAGO_A}", "-pre.c=${FLAGO_C}", "-pre.d=${FLAGO_D}", "-pre.sub.a=${FLAGO_SUB_A}"})
+	os.Setenv("FLAGO_T", "2020-01-01T00:00:00Z")
+	err = fs.Parse([]string{
+		"-pre.a=${FLAGO_A}",
+		"-pre.c=${FLAGO_C}",
+		"-pre.d=${FLAGO_D}",
+		"-pre.sub.a=${FLAGO_SUB_A}",
+		"-pre.t=${FLAGO_T}",
+	})
 	if err != nil {
 		t.Errorf("error should not occur: %v", err)
 	}
@@ -318,12 +364,13 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 		B: true,
 		C: "World Hello!",
 		D: []string{"Kim", "Geon"},
-		e: true,
 		Sub: struct {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "lavabus",
 		},
+		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		e: true,
 	}) {
 		t.Errorf("unexpected result: %v", v)
 	}

@@ -1,6 +1,7 @@
 package flago
 
 import (
+	"encoding"
 	"flag"
 	"fmt"
 	"reflect"
@@ -146,10 +147,17 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
 			}
 		case flag.Value:
 			if expand {
-				fs.Var(newEnvVar(f), name, usage)
-			} else {
-				fs.Var(f, name, usage)
+				f = newEnvVar(f)
 			}
+			fs.Var(f, name, usage)
+		case interface {
+			encoding.TextMarshaler
+			encoding.TextUnmarshaler
+		}:
+			if expand {
+				f = newEnvText(f)
+			}
+			fs.TextVar(f, name, f, usage)
 		default:
 			if field.Kind() != reflect.Struct {
 				return fmt.Errorf("unsupported type: %T", f)
