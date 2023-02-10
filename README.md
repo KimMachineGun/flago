@@ -1,23 +1,28 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/KimMachineGun/flago)](https://pkg.go.dev/github.com/KimMachineGun/flago)
 [![Go Report Card](https://goreportcard.com/badge/github.com/KimMachineGun/flago)](https://goreportcard.com/report/github.com/KimMachineGun/flago)
+
 # Flago
+
 Super simple package for binding command-line flags to your struct.
 
 ## Installation
-```
+
+```sh
 go get github.com/KimMachineGun/flago
 ```
 
 ## Example
+
 [Playground](https://play.golang.org/p/c3HlUPZj1Ot)
+
 ```go
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/KimMachineGun/flago"
 )
@@ -26,6 +31,7 @@ type Flags struct {
 	A string                `flago:"a,usage of a"`
 	B int                   `flago:"b,usage of b"`
 	C CommaSeparatedStrings `flago:"c,usage of c"`
+	D time.Time             `flago:"d,usage of d"`
 }
 
 // CommaSeparatedStrings implements flag.Value.
@@ -40,21 +46,17 @@ func (s *CommaSeparatedStrings) Set(v string) error {
 	return nil
 }
 
-// go run main.go -b=360 -c=Hello,World
+// go run main.go -b=360 -c=Hello,World -d=2020-01-02T00:00:00Z
 func main() {
 	// set default values
 	flags := Flags{
 		A: "AB",
 		B: 180,
 		C: []string{"Foo", "Bar"},
+		D: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
-	err := flago.Bind(flag.CommandLine, &flags)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	flag.PrintDefaults()
+	// go run main.go --help
 	// Output:
 	//  -a string
 	//        usage of a (default "AB")
@@ -62,10 +64,16 @@ func main() {
 	//        usage of b (default 180)
 	//  -c value
 	//        usage of c (default Foo,Bar)
+	//  -d value
+	//        usage of d (default 2020-01-01T00:00:00Z)
 
-	flag.Parse()
+	// parse flags
+	err := flago.Parse(&flags)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	fmt.Println(flags)
-	// Output: {AB 360 [Hello World]}
+	// Output: {AB 360 [Hello World] 2020-01-02 00:00:00 +0000 UTC}
 }
 ```
