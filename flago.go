@@ -28,7 +28,28 @@ func (e *InvalidBindError) Error() string {
 
 // Parse parses the default command-line flag set defined in the flag package.
 func Parse(v interface{}) error {
-	err := Bind(flag.CommandLine, v)
+	return ParseWithPrefix(v, "")
+}
+
+// ParseWithPrefix parses the default command-line flag set defined in the flag package with prefix.
+func ParseWithPrefix(v interface{}, prefix string) error {
+	err := BindWithPrefix(flag.CommandLine, v, prefix)
+	if err != nil {
+		return err
+	}
+	return flag.CommandLine.Parse(os.Args[1:])
+}
+
+// ParseEnvExpanded parses the default command-line flag set defined in the flag package.
+// Unlike Parse, it expands environment variables in the flag values.
+func ParseEnvExpanded(v interface{}) error {
+	return ParseEnvExpandedWithPrefix(v, "")
+}
+
+// ParseEnvExpandedWithPrefix parses the default command-line flag set defined in the flag package with prefix.
+// Unlike ParseWithPrefix, it expands environment variables in the flag values.
+func ParseEnvExpandedWithPrefix(v interface{}, prefix string) error {
+	err := BindEnvExpandedWithPrefix(flag.CommandLine, v, prefix)
 	if err != nil {
 		return err
 	}
@@ -182,7 +203,7 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
 	return nil
 }
 
-// BindEnvExpanded defines exv-expanded flags based on the struct field tags and
+// BindEnvExpanded defines env-expanded flags based on the struct field tags and
 // binds flags to the corresponding fields.
 func BindEnvExpanded(fs *flag.FlagSet, v interface{}) error {
 	return BindEnvExpandedWithPrefix(fs, v, "")
