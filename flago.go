@@ -90,6 +90,15 @@ func ParseEnvExpandedWithPrefix(v interface{}, prefix string) error {
 //		// The name and usage specified in the field tag are separated by comma.
 //		// flag.IntVar()
 //		Age int `flago:"age,the age of gopher"`
+//
+//		// Nested defines a 'nested.*' flag, and its usage prefix is 'nested flags: '.
+//		// Nested is a struct type, so Bind will parse it recursively.
+//		Nested struct {
+//			// NestedName defines a 'name' flag, and its usage message is 'nested name'.
+//			// Since NestedName is a field of Nested, the name of the flag will be 'nested.name',
+//			// and its usage message will be 'nested flags: nested name'.
+//			NestedName string `flago:"name,nested name"`
+//		} `flago:"nested,nested flags: "`
 //	}
 func Bind(fs *flag.FlagSet, v interface{}) error {
 	return BindWithPrefix(fs, v, "")
@@ -98,10 +107,10 @@ func Bind(fs *flag.FlagSet, v interface{}) error {
 // BindWithPrefix defines flags with prefix.
 // See the comments of Bind for more details.
 func BindWithPrefix(fs *flag.FlagSet, v interface{}, prefix string) error {
-	return bind(fs, v, prefix, false)
+	return bind(fs, v, prefix, "", false)
 }
 
-func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
+func bind(fs *flag.FlagSet, v interface{}, nprefix string, uprefix string, expand bool) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct || rv.IsNil() {
 		return &InvalidBindError{Type: reflect.TypeOf(v)}
@@ -125,7 +134,7 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
 		if len(tag) != 2 {
 			tag = append(tag, "")
 		}
-		name, usage := prefix+tag[0], tag[1]
+		name, usage := nprefix+tag[0], uprefix+tag[1]
 
 		switch f := field.Addr().Interface().(type) {
 		case *string:
@@ -194,7 +203,7 @@ func bind(fs *flag.FlagSet, v interface{}, prefix string, expand bool) error {
 				return fmt.Errorf("unsupported type: %T", f)
 			}
 
-			if err := bind(fs, f, name, expand); err != nil {
+			if err := bind(fs, f, name, usage, expand); err != nil {
 				return err
 			}
 		}
@@ -211,5 +220,5 @@ func BindEnvExpanded(fs *flag.FlagSet, v interface{}) error {
 
 // BindEnvExpandedWithPrefix defines env-expanded flags with prefix.
 func BindEnvExpandedWithPrefix(fs *flag.FlagSet, v interface{}, prefix string) error {
-	return bind(fs, v, prefix, true)
+	return bind(fs, v, prefix, "", true)
 }

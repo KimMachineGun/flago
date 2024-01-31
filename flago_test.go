@@ -73,6 +73,9 @@ func TestBind(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		Sub2 struct {
+			A string `flago:"a,usage of sub2.a"`
+		} `flago:"sub2.,sub2 flags: "`
 		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
@@ -99,6 +102,8 @@ func TestBind(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -sub.a string
     	usage of sub.a
+  -sub2.a string
+    	sub2 flags: usage of sub2.a
   -t value
     	usage of t (default 2023-01-01T00:00:00Z)
 `
@@ -112,6 +117,7 @@ func TestBind(t *testing.T) {
 		"-c=Hello World!",
 		"-d=Geon,Kim",
 		"-sub.a=subaval",
+		"-sub2.a=sub2aval",
 		"-t=2020-01-01T00:00:00Z",
 	})
 	if err != nil {
@@ -127,6 +133,11 @@ func TestBind(t *testing.T) {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "subaval",
+		},
+		Sub2: struct {
+			A string `flago:"a,usage of sub2.a"`
+		}{
+			A: "sub2aval",
 		},
 		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
@@ -149,6 +160,9 @@ func TestBindWithPrefix(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		Sub2 struct {
+			A string `flago:"a,usage of sub2.a"`
+		} `flago:"sub2.,sub2 flags: "`
 		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
@@ -176,6 +190,8 @@ func TestBindWithPrefix(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -pre.sub.a string
     	usage of sub.a
+  -pre.sub2.a string
+    	sub2 flags: usage of sub2.a
   -pre.t value
     	usage of t (default 2023-01-01T00:00:00Z)
 `
@@ -189,6 +205,7 @@ func TestBindWithPrefix(t *testing.T) {
 		"-pre.c=Hello World!",
 		"-pre.d=Geon,Kim",
 		"-pre.sub.a=subaval",
+		"-pre.sub2.a=sub2aval",
 		"-pre.t=2020-01-01T00:00:00Z",
 	})
 	if err != nil {
@@ -204,6 +221,11 @@ func TestBindWithPrefix(t *testing.T) {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "subaval",
+		},
+		Sub2: struct {
+			A string `flago:"a,usage of sub2.a"`
+		}{
+			A: "sub2aval",
 		},
 		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
@@ -226,6 +248,9 @@ func TestBindExpanded(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		Sub2 struct {
+			A string `flago:"a,usage of sub2.a"`
+		} `flago:"sub2.,sub2 flags: "`
 		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
@@ -253,6 +278,8 @@ func TestBindExpanded(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -sub.a value
     	usage of sub.a
+  -sub2.a value
+    	sub2 flags: usage of sub2.a
   -t value
     	usage of t (default 2023-01-01T00:00:00Z)
 `
@@ -265,12 +292,14 @@ func TestBindExpanded(t *testing.T) {
 	os.Setenv("FLAGO_C", "World Hello!")
 	os.Setenv("FLAGO_D", "Kim,Geon")
 	os.Setenv("FLAGO_SUB_A", "lavabus")
+	os.Setenv("FLAGO_SUB2_A", "lava2bus")
 	os.Setenv("FLAGO_T", "2020-01-01T00:00:00Z")
 	err = fs.Parse([]string{
 		"-a=${FLAGO_A}",
 		"-c=${FLAGO_C}",
 		"-d=${FLAGO_D}",
 		"-sub.a=${FLAGO_SUB_A}",
+		"-sub2.a=${FLAGO_SUB2_A}",
 		"-t=${FLAGO_T}",
 	})
 	if err != nil {
@@ -286,6 +315,11 @@ func TestBindExpanded(t *testing.T) {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "lavabus",
+		},
+		Sub2: struct {
+			A string `flago:"a,usage of sub2.a"`
+		}{
+			A: "lava2bus",
 		},
 		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
@@ -308,6 +342,9 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 		Sub struct {
 			A string `flago:"a,usage of sub.a"`
 		} `flago:"sub."`
+		Sub2 struct {
+			A string `flago:"a,usage of sub2.a"`
+		} `flago:"sub2.,sub2 flags: "`
 		T time.Time `flago:"t,usage of t"`
 		// e will be omitted, since it is an unexported field.
 		e bool `flago:"e,usage of e"`
@@ -335,6 +372,8 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
     	usage of d (default Kim,Machine,Gun)
   -pre.sub.a value
     	usage of sub.a
+  -pre.sub2.a value
+    	sub2 flags: usage of sub2.a
   -pre.t value
     	usage of t (default 2023-01-01T00:00:00Z)
 `
@@ -347,12 +386,14 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 	os.Setenv("FLAGO_C", "World Hello!")
 	os.Setenv("FLAGO_D", "Kim,Geon")
 	os.Setenv("FLAGO_SUB_A", "lavabus")
+	os.Setenv("FLAGO_SUB2_A", "lava2bus")
 	os.Setenv("FLAGO_T", "2020-01-01T00:00:00Z")
 	err = fs.Parse([]string{
 		"-pre.a=${FLAGO_A}",
 		"-pre.c=${FLAGO_C}",
 		"-pre.d=${FLAGO_D}",
 		"-pre.sub.a=${FLAGO_SUB_A}",
+		"-pre.sub2.a=${FLAGO_SUB2_A}",
 		"-pre.t=${FLAGO_T}",
 	})
 	if err != nil {
@@ -368,6 +409,11 @@ func TestBindEnvExpandedWithPrefix(t *testing.T) {
 			A string `flago:"a,usage of sub.a"`
 		}{
 			A: "lavabus",
+		},
+		Sub2: struct {
+			A string `flago:"a,usage of sub2.a"`
+		}{
+			A: "lava2bus",
 		},
 		T: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		e: true,
