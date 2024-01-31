@@ -64,9 +64,9 @@ func ParseEnvExpandedWithPrefix(v interface{}, prefix string) error {
 // of the flag. If a field does not have a 'flago' field tag,
 // it will be ignored.
 //
-//	If a field is struct type, Bind will parse it recursively,
-//	and its field tag will be used as a prefix of the names of
-//	the flags defined by itself.
+// If a field is struct type, Bind will parse it recursively,
+// and its field tag will be used as a prefix of the names of
+// the flags defined by itself.
 //
 // Supported Field Types:
 //
