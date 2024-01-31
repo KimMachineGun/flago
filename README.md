@@ -13,7 +13,7 @@ go get github.com/KimMachineGun/flago
 
 ## Example
 
-[Playground](https://play.golang.org/p/c3HlUPZj1Ot)
+[Playground](https://go.dev/play/p/9RW5vxAFXlh)
 
 ```go
 package main
@@ -32,6 +32,12 @@ type Flags struct {
 	B int                   `flago:"b,usage of b"`
 	C CommaSeparatedStrings `flago:"c,usage of c"`
 	D time.Time             `flago:"d,usage of d"`
+	E NestedFlags           `flago:"e.,nested flags: "`
+}
+
+type NestedFlags struct {
+	A string `flago:"a,usage of a"`
+	B int    `flago:"b,usage of b"`
 }
 
 // CommaSeparatedStrings implements flag.Value.
@@ -46,7 +52,7 @@ func (s *CommaSeparatedStrings) Set(v string) error {
 	return nil
 }
 
-// go run main.go -b=360 -c=Hello,World -d=2020-01-02T00:00:00Z
+// go run main.go -b=360 -c=Hello,World -d=2020-01-02T00:00:00Z -e.a=CD
 func main() {
 	// set default values
 	flags := Flags{
@@ -54,6 +60,10 @@ func main() {
 		B: 180,
 		C: []string{"Foo", "Bar"},
 		D: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		E: NestedFlags{
+			A: "AB",
+			B: 180,
+		},
 	}
 
 	// go run main.go --help
@@ -66,6 +76,10 @@ func main() {
 	//        usage of c (default Foo,Bar)
 	//  -d value
 	//        usage of d (default 2020-01-01T00:00:00Z)
+	//  -e.a string
+	//        nested flags: usage of a (default "AB")
+	//  -e.b int
+	//        nested flags: usage of b (default 180)
 
 	// parse flags
 	err := flago.Parse(&flags)
@@ -74,6 +88,6 @@ func main() {
 	}
 
 	fmt.Println(flags)
-	// Output: {AB 360 [Hello World] 2020-01-02 00:00:00 +0000 UTC}
+	// Output: {AB 360 [Hello World] 2020-01-02 00:00:00 +0000 UTC {CD 180}}
 }
 ```
